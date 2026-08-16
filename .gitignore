@@ -1,29 +1,17 @@
-# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
 .eggs/
 build/
 dist/
-
-# Virtual environments
 .venv/
 venv/
 env/
-
-# Jupyter
 .ipynb_checkpoints/
-
-# Environment variables / secrets
 .env
-
-# IDE
 .idea/
 .vscode/
-
-# OS
 .DS_Store
 Thumbs.db
-
-# Logs
 *.log
+scripts/
