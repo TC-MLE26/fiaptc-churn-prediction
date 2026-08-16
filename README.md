@@ -53,17 +53,6 @@ Secrets do Colab (ícone de chave na barra lateral) com os nomes `KAGGLE_USERNAM
 
 ## Como Executar
 
-**Treinar o modelo (Google Colab)**
-
-Abra `notebooks/01_eda_baseline.ipynb` no Google Colab e execute as células na ordem. Ao
-final o notebook gera o arquivo do modelo, que deve ser baixado e movido para a pasta
-`models/`.
-
-**Subir a API e rodar os testes (local)**
-
-Os comandos serão adicionados na Etapa 3, quando a API for implementada. O ambiente local
-não treina modelo: ele apenas carrega o `.joblib` da pasta `models/` e serve as predições.
-
 ---
 
 ## API
