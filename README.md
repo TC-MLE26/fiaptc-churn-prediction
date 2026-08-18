@@ -9,39 +9,42 @@ constrói um pipeline preditivo que classifica clientes com risco de cancelament
 o time de retenção consiga agir de forma preventiva em vez de reativa.
 
 É um problema de classificação binária com dados tabulares, onde cada linha representa um
-cliente. O projeto vai da análise exploratória até o modelo servido por uma API REST.
+cliente. O objetivo do projeto é cobrir a análise exploratória, o treinamento e a
+disponibilização do modelo por uma API REST.
 
 ---
 
 ## Estrutura do Repositório
 
 ```
-data/         dados brutos (o dataset é baixado do Kaggle, não versionado)
-docs/         documentação e Model Card
-models/       modelos treinados (.joblib)
-notebooks/    experimentação: EDA, baseline e comparação de modelos
-src/          código produtivo (pré-processamento, predição e API)
-tests/        testes automatizados com pytest
+data/              arquivos de dados locais (não versionados)
+docs/              documentação planejada para as próximas etapas
+models/            artefato do modelo baseline
+notebooks/         EDA, limpeza dos dados e treinamento do baseline
+src/api/routes/    rotas da API
+src/core/          configurações da aplicação
+src/schemas/       contratos de entrada e saída
+tests/             testes automatizados da API
+main.py            ponto de entrada da aplicação
 ```
 
 ---
 
 ## Setup
 
-O modelo foi treinado com base num dataset de casos de churn, open dataset no kaggle: https://www.kaggle.com/datasets/yeanzc/telco-customer-churn-ibm-dataset
+O baseline utiliza o dataset público
+[Telco Customer Churn — IBM](https://www.kaggle.com/datasets/yeanzc/telco-customer-churn-ibm-dataset),
+disponibilizado no Kaggle.
 
-**Ambiente local** (usado para servir a API e rodar os testes, não para treinar):
+O projeto usa Python 3.11 e [uv](https://docs.astral.sh/uv/) para gerenciar o ambiente e
+as dependências:
 
 ```bash
-py -3.11 -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
+uv sync
 ```
 
-As versões no `requirements.txt` estão fixadas nas mesmas usadas no Colab
-(`scikit-learn 1.6.1`, `pandas 2.2.2`, `numpy 2.0.2`). Se divergirem, o `joblib.load` do
-modelo pode falhar ou emitir aviso de incompatibilidade. Use Python 3.11, que é a versão
-compatível com esse conjunto de bibliotecas.
+As versões ficam fixadas no `pyproject.toml` e no `uv.lock`, incluindo as mesmas versões
+usadas no Colab (`scikit-learn 1.6.1`, `pandas 2.2.2` e `numpy 2.0.2`).
 
 **Treinamento no Colab:**
 
@@ -51,22 +54,47 @@ Secrets do Colab (ícone de chave na barra lateral) com os nomes `KAGGLE_USERNAM
 
 ---
 
-## Como Executar
-
----
-
 ## API
 
-Ainda não implementada. Será construída com FastAPI, com dois endpoints:
+A estrutura inicial da API foi construída com FastAPI. O código fica em `src/api`
+(rotas), `src/core` (configuração, CORS e logging) e `src/schemas` (contratos de
+entrada e saída). O ponto de entrada é o `main.py`.
 
-- `GET /health` — verifica se a API está no ar
-- `POST /predict` — recebe os dados de um cliente e retorna a propensão de churn
+Para subir localmente:
+
+```bash
+uv run python main.py
+```
+
+A documentação interativa fica em `/docs` (Swagger) e `/redoc`.
+
+**Endpoints:**
+
+- `GET /health` — verifica se a API está no ar.
+- `POST /predict` — possui os contratos de entrada e saída definidos e publicados
+  no OpenAPI; a inferência ainda não está implementada.
+
+A API ainda não carrega artefatos nem possui serviço de predição.
 
 ---
 
 ## Testes
 
-Ainda não implementados (Etapa 3).
+Os testes da API estão em `tests/`, escritos com `pytest` e o `TestClient` do
+FastAPI. A configuração fica no `pyproject.toml`.
+
+```bash
+uv run pytest
+```
+
+**Cobertura atual:**
+
+- `tests/test_api_health.py` — contrato do `GET /health` e metadados da aplicação.
+- `tests/test_api_predict.py` — contrato das 19 features, validação de payload e
+  schemas publicados no OpenAPI.
+
+Os testes cobrem somente a estrutura implementada e não dependem dos artefatos da
+Etapa 2.
 
 ---
 
@@ -108,10 +136,4 @@ A comparação com Random Forest e MLP, e a escolha do modelo campeão, são da 
 
 ## Model Card
 
-Ainda não escrito (Etapa 4).
-
----
-
-## Contribuidores
-
--
+Planejado para a Etapa 4.
