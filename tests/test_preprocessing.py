@@ -1,9 +1,7 @@
-"""Tests for src.services.preprocessing."""
-
 import pandas as pd
 import pytest
 
-from src.services.preprocessing import (
+from src.ml.preprocessing import (
     CATEGORICAL_FEATURES,
     FEATURES,
     LEAKAGE_COLUMNS,
@@ -16,6 +14,83 @@ from src.services.preprocessing import (
     normalize_columns,
     split_features_target,
 )
+
+
+def _raw_row(**overrides):
+    row = {
+        "CustomerID": "0000-AAAAA",
+        "Count": 1,
+        "Country": "United States",
+        "State": "California",
+        "City": "Los Angeles",
+        "Zip Code": 90003,
+        "Lat Long": "33.96, -118.27",
+        "Latitude": 33.96,
+        "Longitude": -118.27,
+        "Gender": "Male",
+        "Senior Citizen": "No",
+        "Partner": "No",
+        "Dependents": "No",
+        "Tenure Months": 12,
+        "Phone Service": "Yes",
+        "Multiple Lines": "No",
+        "Internet Service": "DSL",
+        "Online Security": "Yes",
+        "Online Backup": "Yes",
+        "Device Protection": "No",
+        "Tech Support": "No",
+        "Streaming TV": "No",
+        "Streaming Movies": "No",
+        "Contract": "Month-to-month",
+        "Paperless Billing": "Yes",
+        "Payment Method": "Mailed check",
+        "Monthly Charges": 53.85,
+        "Total Charges": "646.20",
+        "Churn Label": "No",
+        "Churn Value": 0,
+        "Churn Score": 40,
+        "CLTV": 3239,
+        "Churn Reason": None,
+    }
+    row.update(overrides)
+    return row
+
+
+@pytest.fixture()
+def raw_dataframe():
+    return pd.DataFrame(
+        [
+            _raw_row(
+                CustomerID="3668-QPYBK",
+                **{
+                    "Tenure Months": 2,
+                    "Churn Label": "Yes",
+                    "Churn Value": 1,
+                    "Churn Score": 86,
+                    "Churn Reason": "Competitor made better offer",
+                },
+            ),
+            _raw_row(
+                CustomerID="9237-HQITU",
+                **{
+                    "Tenure Months": 24,
+                    "Senior Citizen": "Yes",
+                    "Contract": "Two year",
+                    "Internet Service": "Fiber optic",
+                    "Total Charges": "1696.80",
+                },
+            ),
+            _raw_row(
+                CustomerID="0000-NEWBI",
+                **{
+                    "Tenure Months": 0,
+                    "Phone Service": "No",
+                    "Multiple Lines": "No phone service",
+                    "Total Charges": " ",
+                },
+            ),
+        ]
+    )
 
 
 @pytest.mark.parametrize(
@@ -32,12 +107,10 @@ from src.services.preprocessing import (
     ],
 )
 def test_normalize_column_name(source, expected):
-    """Source column names become the snake_case names used downstream."""
     assert normalize_column_name(source) == expected
 
 
 def test_normalize_columns_renames_every_column(raw_dataframe):
-    """No column keeps a space or an uppercase letter after normalization."""
     result = normalize_columns(raw_dataframe)
 
     assert all(column == column.lower() for column in result.columns)
@@ -46,27 +119,23 @@ def test_normalize_columns_renames_every_column(raw_dataframe):
 
 
 def test_add_target_from_churn_value(raw_dataframe):
-    """The numeric churn column becomes the 0/1 target."""
     result = add_target(normalize_columns(raw_dataframe))
 
     assert result[TARGET].tolist() == [1, 0, 0]
 
 
 def test_add_target_falls_back_to_churn_label():
-    """Without churn_value, the textual label is used."""
     frame = pd.DataFrame({"churn_label": ["Yes", "no", " YES "]})
 
     assert add_target(frame)[TARGET].tolist() == [1, 0, 1]
 
 
 def test_add_target_without_churn_column_raises():
-    """A dataset with no churn column fails loudly instead of silently."""
     with pytest.raises(KeyError, match="No churn column found"):
         add_target(pd.DataFrame({"tenure_months": [1]}))
 
 
 def test_coerce_total_charges_fills_blank_with_zero():
-    """Blank total_charges means the customer was never billed, so zero."""
     frame = pd.DataFrame({"total_charges": ["108.15", " ", "", "1696.80"]})
 
     result = coerce_total_charges(frame)
@@ -76,7 +145,6 @@ def test_coerce_total_charges_fills_blank_with_zero():
 
 
 def test_drop_non_predictive_columns_removes_leakage(raw_dataframe):
-    """Columns that only exist after cancellation are dropped."""
     result = drop_non_predictive_columns(normalize_columns(raw_dataframe))
 
     for column in LEAKAGE_COLUMNS:
@@ -84,7 +152,6 @@ def test_drop_non_predictive_columns_removes_leakage(raw_dataframe):
 
 
 def test_clean_data_keeps_only_the_expected_features(raw_dataframe):
-    """The cleaned frame carries exactly the 19 features plus the target."""
     result = clean_data(raw_dataframe)
 
     assert list(result.columns) == FEATURES + [TARGET]
@@ -92,12 +159,6 @@ def test_clean_data_keeps_only_the_expected_features(raw_dataframe):
 
 
 def test_clean_data_removes_leakage_and_identifiers(raw_dataframe):
-    """The most important guarantee: no leaked column reaches the model.
-
-    churn_score, churn_reason and cltv are filled in by the operator after the
-    customer cancels. If any of them stayed, the model would score almost
-    perfectly offline and be worthless in production.
-    """
     result = clean_data(raw_dataframe)
 
     for column in ("churn_score", "churn_reason", "cltv", "churn_label", "churn_value"):
@@ -107,11 +168,6 @@ def test_clean_data_removes_leakage_and_identifiers(raw_dataframe):
 
 
 def test_clean_data_has_no_nulls_and_string_categoricals(raw_dataframe):
-    """Cleaning leaves no nulls, and categoricals are strings.
-
-    senior_citizen may arrive as Yes/No or as 1/0 depending on the file
-    version; casting to string makes both behave the same for the encoder.
-    """
     result = clean_data(raw_dataframe)
 
     assert not result.isna().to_numpy().any()
@@ -120,7 +176,6 @@ def test_clean_data_has_no_nulls_and_string_categoricals(raw_dataframe):
 
 
 def test_clean_data_converts_total_charges_of_new_customer(raw_dataframe):
-    """The customer with zero months ends up with total_charges 0."""
     result = clean_data(raw_dataframe)
     new_customer = result[result["tenure_months"] == 0]
 
@@ -128,7 +183,6 @@ def test_clean_data_converts_total_charges_of_new_customer(raw_dataframe):
 
 
 def test_clean_data_missing_feature_raises(raw_dataframe):
-    """A dataset without an expected feature fails with a clear message."""
     incomplete = raw_dataframe.drop(columns=["Contract"])
 
     with pytest.raises(ValueError, match="Missing expected features"):
@@ -136,7 +190,6 @@ def test_clean_data_missing_feature_raises(raw_dataframe):
 
 
 def test_clean_data_does_not_mutate_the_input(raw_dataframe):
-    """Cleaning returns a new frame and leaves the original untouched."""
     before = raw_dataframe.copy()
 
     clean_data(raw_dataframe)
@@ -145,7 +198,6 @@ def test_clean_data_does_not_mutate_the_input(raw_dataframe):
 
 
 def test_split_features_target(raw_dataframe):
-    """The split returns the feature matrix and the target separately."""
     features, target = split_features_target(clean_data(raw_dataframe))
 
     assert list(features.columns) == FEATURES
