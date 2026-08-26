@@ -1,0 +1,26 @@
+# Controle de versão
+.git/
+.gitignore
+
+# Ambientes virtuais e caches Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Segredos — nunca entram na imagem
+.env
+
+# Artefatos de dev/EDA — não são necessários no servidor
+notebooks/
+docs/
+data/
+
+# Ferramentas / SO
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log

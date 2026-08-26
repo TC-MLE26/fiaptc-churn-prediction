@@ -1,0 +1,7 @@
+services:
+  api-churn:
+    build: .
+    container_name: api_churn_predict
+    ports:
+      - "8075:8075" # Mapeia a porta da sua VPS para a porta do container
+    restart: always # Se o servidor reiniciar, a API liga sozinha
