@@ -18,11 +18,12 @@ disponibilização do modelo por uma API REST.
 
 ```
 data/              arquivos de dados locais (não versionados)
-docs/              documentação planejada para as próximas etapas
-models/            artefato do modelo baseline
+docs/              documentação (Model Card)
+models/            artefatos do modelo baseline e campeão
 notebooks/         EDA, limpeza dos dados e treinamento do baseline
 src/api/routes/    rotas da API
 src/core/          configurações da aplicação
+src/ml/            modelo e preditor
 src/schemas/       contratos de entrada e saída
 tests/             testes automatizados da API
 main.py            ponto de entrada da aplicação
@@ -44,15 +45,33 @@ uv sync
 ```
 
 As versões ficam fixadas no `pyproject.toml` e no `uv.lock`, incluindo as mesmas versões
-usadas no Colab (`scikit-learn 1.6.1`, `pandas 2.2.2` e `numpy 2.0.2`).
+usadas no Colab `(scikit-learn 1.8.0, pandas 2.2.3 e numpy 2.2.0).`
+
+---
+
+## Alternativa com venv (Windows/Linux/Mac)
+
+**Criar ambiente virtual**
+python -m venv venv
+
+**Ativar (Windows)**
+.\venv\Scripts\activate
+
+**Ativar (Linux/Mac)**
+source venv/bin/activate
+
+**Instalar dependências**
+pip install -r requirements.txt
+
+## Dependências de desenvolvimento (para testes)
+
+`pip install -r requirements-dev.txt`
 
 **Treinamento no Colab:**
 
 Os notebooks baixam o dataset pela API do Kaggle. É preciso cadastrar as credenciais nos
 Secrets do Colab (ícone de chave na barra lateral) com os nomes `KAGGLE_USERNAME` e
 `KAGGLE_KEY`, obtidos em Settings > API > Create New Token no Kaggle.
-
----
 
 ## API
 
@@ -65,33 +84,106 @@ Para subir localmente:
 ```bash
 uv run python main.py
 ```
+ou com venv:
+
+```bash
+python main.py
+
+```
 
 A documentação interativa fica em `/docs` (Swagger) e `/redoc`.
 
 **Endpoints:**
 
-- `GET /health` — verifica se a API está no ar.
-- `POST /predict` — possui os contratos de entrada e saída definidos e publicados
-  no OpenAPI; a inferência ainda não está implementada.
+  Método	Endpoint	  Descrição
+- `GET    /health`  — verifica se a API está no ar.
+- `POST   /predict` — recebe as 19 features do cliente e retorna a probabilidade de churn e o nível de risco.
+- `GET	/docs`	    — Documentação Swagger interativa
 
-A API ainda não carrega artefatos nem possui serviço de predição.
+**Exemplo de requisição**
 
+curl -X POST http://localhost:8075/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenure_months": 1,
+    "monthly_charges": 29.85,
+    "total_charges": 29.85,
+    "gender": "Female",
+    "senior_citizen": "No",
+    "partner": "Yes",
+    "dependents": "No",
+    "phone_service": "No",
+    "multiple_lines": "No phone service",
+    "internet_service": "DSL",
+    "online_security": "No",
+    "online_backup": "Yes",
+    "device_protection": "No",
+    "tech_support": "No",
+    "streaming_tv": "No",
+    "streaming_movies": "No",
+    "contract": "Month-to-month",
+    "paperless_billing": "Yes",
+    "payment_method": "Electronic check"
+  }'
+
+**Resposta esperada**
+```bash
+{
+  "churn_prediction": 1,
+  "churn_probability": 0.868,
+  "risk_level": "Alto"
+}
+```
 ---
+
+## Deploy
+
+A API está disponível publicamente em: http://177.71.245.99:8075
+
+Acesse a documentação interativa em: http://177.71.245.99:8075/docs
+
+**Endpoints disponíveis:**
+- `GET /health`    status da API
+- `POST /predict`  predição de churn
+- `GET /docs`      documentação Swagger interativa
+
+### Exemplo de requisição
+
+```bash
+curl -X POST http://177.71.245.99:8075/predict \
+  -H "Content-Type: application/json" \
+  -d '{"tenure_months":1,"monthly_charges":29.85,"total_charges":29.85,"gender":"Female","senior_citizen":"No","partner":"Yes","dependents":"No","phone_service":"No","multiple_lines":"No phone service","internet_service":"DSL","online_security":"No","online_backup":"Yes","device_protection":"No","tech_support":"No","streaming_tv":"No","streaming_movies":"No","contract":"Month-to-month","paperless_billing":"Yes","payment_method":"Electronic check"}'
+```
+**Resposta esperada**
+```bash
+{
+  "churn_prediction": 1,
+  "churn_probability": 0.868,
+  "risk_level": "Alto"
+}
+```
 
 ## Testes
 
-Os testes da API estão em `tests/`, escritos com `pytest` e o `TestClient` do
-FastAPI. A configuração fica no `pyproject.toml`.
+Os testes da API estão em tests/, escritos com pytest e o TestClient do FastAPI.
 
 ```bash
 uv run pytest
 ```
+ou com venv:
+
+```bash
+pytest -v
+```
 
 **Cobertura atual:**
 
-- `tests/test_api_health.py` — contrato do `GET /health` e metadados da aplicação.
-- `tests/test_api_predict.py` — contrato das 19 features, validação de payload e
-  schemas publicados no OpenAPI.
+- `tests/test_api_health.py`       — contrato do `GET /health` e metadados da aplicação.
+- `tests/test_api_predict.py`      — contrato das 19 features, validação de payload e schemas publicados no OpenAPI.
+- `tests/test_data.py`             — leitura e validação dos dados.
+```bash
+Resultado: 57 testes passando
+```
 
 Os testes cobrem somente a estrutura implementada e não dependem dos artefatos da
 Etapa 2.
@@ -136,4 +228,31 @@ A comparação com Random Forest e MLP, e a escolha do modelo campeão, são da 
 
 ## Model Card
 
-Planejado para a Etapa 4.
+O Model Card completo está disponível em docs/model_card.md.
+
+Tecnologias Utilizadas
+```bash
+Python 3.11
+
+FastAPI — API REST
+
+Scikit-Learn — Modelagem e pré-processamento
+
+Pandas / NumPy — Manipulação de dados
+
+Pytest — Testes automatizados
+
+Docker — Containerização
+
+Uvicorn — Servidor ASGI
+```
+## Licença
+
+Este projeto foi desenvolvido como parte do Tech Challenge — Fase 1 da pós-graduação em Machine Learning Engineering da FIAP.
+
+
+---
+
+
+
+
