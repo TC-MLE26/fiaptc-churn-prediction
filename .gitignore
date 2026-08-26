@@ -15,3 +15,42 @@ env/
 Thumbs.db
 *.log
 scripts/
+
+# Ambientes virtuais
+.venv/
+.venv-*/
+venv/
+env/
+
+# Caches Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Dados grandes (não versionar)
+*.pkl
+*.joblib
+!models/*.joblib  # ← EXCEÇÃO: versionar os modelos salvos
+
+# Arquivos locais
+requirements-local.txt
+*.local.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/

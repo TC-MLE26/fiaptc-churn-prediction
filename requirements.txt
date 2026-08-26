@@ -1,0 +1,12 @@
+# requirements.txt
+# Dependências essenciais para produção
+
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+scikit-learn==1.8.0
+pandas==2.2.3
+numpy==2.2.0
+joblib==1.4.2
+python-dotenv==1.0.1
+pydantic==2.10.4
+pydantic-settings==2.6.1

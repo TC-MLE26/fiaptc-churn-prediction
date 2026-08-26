@@ -1,3 +1,5 @@
+# .dockerignore
+
 # Controle de versão
 .git/
 .gitignore
@@ -6,17 +8,20 @@
 .venv/
 venv/
 env/
-__pycache__/
+__pycache__
 *.py[cod]
 .pytest_cache/
 
-# Segredos — nunca entram na imagem
+# Segredos – nunca entram na imagem
 .env
 
-# Artefatos de dev/EDA — não são necessários no servidor
-notebooks/
-docs/
+# Artefatos de dados – não são necessários no servidor
 data/
+
+# NOTA: notebooks/ e docs/ NÃO devem ser ignorados
+# Eles fazem parte da documentação do projeto
+# notebooks/  ← REMOVA ESTA LINHA
+# docs/       ← REMOVA ESTA LINHA
 
 # Ferramentas / SO
 .idea/
