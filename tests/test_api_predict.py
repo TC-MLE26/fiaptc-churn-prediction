@@ -51,3 +51,18 @@ def test_predict_contract_is_exposed_in_openapi(client):
 
     assert request_schema["$ref"].endswith("/PredictRequest")
     assert response_schema["$ref"].endswith("/PredictResponse")
+
+
+def test_predict_returns_churn_prediction(client, valid_payload):
+    """A valid payload returns a full churn prediction."""
+    response = client.post("/predict", json=valid_payload)
+
+    assert response.status_code == 200
+    body = response.json()
+
+    assert 0.0 <= body["churn_probability"] <= 1.0
+    assert isinstance(body["churn_prediction"], bool)
+    assert body["threshold"] == 0.5
+    assert body["model_name"] == "champion_model"
+    assert isinstance(body["model_version"], str) and body["model_version"]
+
