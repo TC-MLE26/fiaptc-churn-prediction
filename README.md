@@ -51,27 +51,41 @@ usadas no Colab `(scikit-learn 1.8.0, pandas 2.2.3 e numpy 2.2.0).`
 
 ## Alternativa com venv (Windows/Linux/Mac)
 
-**Criar ambiente virtual**
+Criar e ativar o ambiente virtual:
+
+```bash
 python -m venv venv
+```
 
-**Ativar (Windows)**
+```bash
 .\venv\Scripts\activate
+```
 
-**Ativar (Linux/Mac)**
+No Linux ou macOS:
+
+```bash
 source venv/bin/activate
+```
 
-**Instalar dependências**
+Instalar as dependências:
+
+```bash
 pip install -r requirements.txt
+```
 
-## Dependências de desenvolvimento (para testes)
+### Dependências de desenvolvimento (para testes)
 
-`pip install -r requirements-dev.txt`
+```bash
+pip install -r requirements-dev.txt
+```
 
 **Treinamento no Colab:**
 
 Os notebooks baixam o dataset pela API do Kaggle. É preciso cadastrar as credenciais nos
 Secrets do Colab (ícone de chave na barra lateral) com os nomes `KAGGLE_USERNAME` e
 `KAGGLE_KEY`, obtidos em Settings > API > Create New Token no Kaggle.
+
+---
 
 ## API
 
@@ -88,20 +102,21 @@ ou com venv:
 
 ```bash
 python main.py
-
 ```
 
 A documentação interativa fica em `/docs` (Swagger) e `/redoc`.
 
 **Endpoints:**
 
-  Método	Endpoint	  Descrição
-- `GET    /health`  — verifica se a API está no ar.
-- `POST   /predict` — recebe as 19 features do cliente e retorna a probabilidade de churn e o nível de risco.
-- `GET	/docs`	    — Documentação Swagger interativa
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/health` | Verifica se a API está no ar |
+| `POST` | `/predict` | Recebe as 19 features do cliente e retorna a probabilidade de churn |
+| `GET` | `/docs` | Documentação Swagger interativa |
 
 **Exemplo de requisição**
 
+```bash
 curl -X POST http://localhost:8075/predict \
   -H "Content-Type: application/json" \
   -d '{
@@ -125,15 +140,20 @@ curl -X POST http://localhost:8075/predict \
     "paperless_billing": "Yes",
     "payment_method": "Electronic check"
   }'
+```
 
 **Resposta esperada**
-```bash
+
+```json
 {
-  "churn_prediction": 1,
-  "churn_probability": 0.868,
-  "risk_level": "Alto"
+  "churn_probability": 0.8677,
+  "churn_prediction": true,
+  "threshold": 0.5,
+  "model_name": "champion_model",
+  "model_version": "0.1.0"
 }
 ```
+
 ---
 
 ## Deploy
@@ -154,14 +174,20 @@ curl -X POST http://177.71.245.99:8075/predict \
   -H "Content-Type: application/json" \
   -d '{"tenure_months":1,"monthly_charges":29.85,"total_charges":29.85,"gender":"Female","senior_citizen":"No","partner":"Yes","dependents":"No","phone_service":"No","multiple_lines":"No phone service","internet_service":"DSL","online_security":"No","online_backup":"Yes","device_protection":"No","tech_support":"No","streaming_tv":"No","streaming_movies":"No","contract":"Month-to-month","paperless_billing":"Yes","payment_method":"Electronic check"}'
 ```
+
 **Resposta esperada**
-```bash
+
+```json
 {
-  "churn_prediction": 1,
-  "churn_probability": 0.868,
-  "risk_level": "Alto"
+  "churn_probability": 0.8677,
+  "churn_prediction": true,
+  "threshold": 0.5,
+  "model_name": "champion_model",
+  "model_version": "0.1.0"
 }
 ```
+
+---
 
 ## Testes
 
@@ -178,15 +204,18 @@ pytest -v
 
 **Cobertura atual:**
 
-- `tests/test_api_health.py`       — contrato do `GET /health` e metadados da aplicação.
-- `tests/test_api_predict.py`      — contrato das 19 features, validação de payload e schemas publicados no OpenAPI.
-- `tests/test_data.py`             — leitura e validação dos dados.
-```bash
-Resultado: 57 testes passando
-```
+- `tests/test_api_health.py` — contrato do `GET /health` e metadados da aplicação.
+- `tests/test_api_predict.py` — contrato das 19 features, validação de payload e schemas publicados no OpenAPI.
+- `tests/test_preprocessing.py` — funções de limpeza: nomes de coluna, criação do alvo, conversão de `Total Charges` e remoção das colunas de vazamento.
+- `tests/test_data.py` — escolha e leitura do arquivo do dataset, com cache local.
+- `tests/test_pipelines.py` — construção do pré-processador e dos modelos candidatos.
+- `tests/test_evaluation.py` — cálculo das métricas, validação cruzada e escolha do campeão.
+- `tests/test_train.py` — orquestração do treinamento e gravação dos artefatos.
 
-Os testes cobrem somente a estrutura implementada e não dependem dos artefatos da
-Etapa 2.
+**Resultado: 57 testes passando.**
+
+Os testes de pré-processamento e de API usam dados sintéticos, então rodam sem precisar do
+dataset do Kaggle nem de credenciais.
 
 ---
 
@@ -222,7 +251,7 @@ O AUC idêntico mostra que o modelo balanceado não é mais preciso, apenas desl
 para o lado que interessa ao negócio: identifica 78% de quem iria cancelar, contra 57% da
 versão padrão.
 
-A comparação com Random Forest e MLP, e a escolha do modelo campeão, são da Etapa 2.
+A comparação completa entre Regressão Logística, Random Forest e MLPClassifier, a escolha do modelo campeão e a matriz de confusão estão documentadas no [Model Card](docs/model_card.md).
 
 ---
 
@@ -230,29 +259,20 @@ A comparação com Random Forest e MLP, e a escolha do modelo campeão, são da 
 
 O Model Card completo está disponível em docs/model_card.md.
 
-Tecnologias Utilizadas
-```bash
-Python 3.11
+---
 
-FastAPI — API REST
+## Tecnologias Utilizadas
 
-Scikit-Learn — Modelagem e pré-processamento
-
-Pandas / NumPy — Manipulação de dados
-
-Pytest — Testes automatizados
-
-Docker — Containerização
-
-Uvicorn — Servidor ASGI
-```
-## Licença
-
-Este projeto foi desenvolvido como parte do Tech Challenge — Fase 1 da pós-graduação em Machine Learning Engineering da FIAP.
-
+- **Python 3.11**
+- **FastAPI** — API REST
+- **Scikit-Learn** — modelagem e pré-processamento
+- **Pandas / NumPy** — manipulação de dados
+- **Pytest** — testes automatizados
+- **Docker** — containerização
+- **Uvicorn** — servidor ASGI
 
 ---
 
+## Licença
 
-
-
+Este projeto foi desenvolvido como parte do Tech Challenge — Fase 1 da pós-graduação em Machine Learning Engineering da FIAP.
